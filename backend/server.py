@@ -2,6 +2,9 @@ from sec_downloader import Downloader
 import sec_parser as sp
 from pprint import pprint
 from bs4 import BeautifulSoup
+import contextlib 
+from flask import Flask,request,jsonify
+from flask_cors import CORS 
 
 '''
 +=========+
@@ -33,21 +36,66 @@ def isHeaderOrTitle(element):
     else:
           return False 
 
+# original method before trying to parse headers 
+# def printTable(element):
+#     # actually getting the tables out 
+#     table_tag1 = element._html_tag._bs4
+#     parsed_table = [] 
+#     rows = table_tag1.find_all("tr") 
+#     print("#TABLE_START") 
+#     for row in rows: 
+#         cells = row.find_all(["td", "th"])
+#         text_cells = [cell.get_text(strip=True) for cell in cells if cell.get_text(strip=True)]
+#         if text_cells:
+#             print(text_cells)
+#             parsed_table.append(row)
+#     print("#TABLE_END") 
+
+
 def printTable(element):
-    # actually getting the tables out 
-    table_tag1 = element._html_tag._bs4
-    parsed_table = [] 
-    rows = table_tag1.find_all("tr") 
-    print("#TABLE_START") 
-    for row in rows: 
+    def clean_row(row):
+        """Merge $ with numeric values and remove unnecessary tokens."""
+        cleaned = []
+        skip = False
+        for i, val in enumerate(row):
+            if val == '$':
+                skip = True
+                continue
+            if skip:
+                cleaned.append(f"${val}")
+                skip = False
+            else:
+                cleaned.append(val)
+        return cleaned
+
+    table_tag = element._html_tag._bs4
+    rows = table_tag.find_all("tr")
+    
+    headers = []
+    print("#TABLE_START")
+
+    for idx, row in enumerate(rows):
         cells = row.find_all(["td", "th"])
-        text_cells = [cell.get_text(strip=True) for cell in cells if cell.get_text(strip=True)]
-        if text_cells:
+        raw_text_cells = [cell.get_text(strip=True) for cell in cells if cell.get_text(strip=True)]
+
+        if not raw_text_cells:
+            continue
+
+        text_cells = clean_row(raw_text_cells)
+
+        # Set headers from the first valid date row
+        if not headers and all(',' in cell for cell in text_cells) and len(text_cells) >= 2:
+            headers = ['Line Item'] + text_cells
+            print(headers)
+            continue
+
+        # Section label (e.g. "ASSETS:", "LIABILITIES")
+        if len(text_cells) == 1:
+            print([f"**{text_cells[0]}**"] + [''] * (len(headers) - 1))
+        else:
             print(text_cells)
-            parsed_table.append(row)
-    print("#TABLE_END") 
 
-
+    print("#TABLE_END")
 
 '''
 +=============+
@@ -168,8 +216,46 @@ for key, element in render_elements.items():
 # pprintTag(elements[197])  
 # print(elements[197].text)
 
+# following segment was AI-generated 
+# TODO: rewrite methods so that they return strings
+with open("output.txt", "w", encoding="utf-8") as f:
+    with contextlib.redirect_stdout(f):
+        for key, element in table_elements.items():
+            print("Table #", key)
+            printTable(element)
+            print()
+
+        for key, element in render_elements.items():
+            print("Element #", key)
+            elementType = type(element) 
+            if (elementType == sp.semantic_elements.title_element.TitleElement or 
+                elementType == sp.semantic_elements.top_section_title.TopSectionTitle):
+                print(element.text)
+            elif (elementType == sp.semantic_elements.table_element.table_element.TableElement):
+                printTable(element)
+            else:
+                print("Not Handled")
+            print()
 
 
+'''
++=============+
+|    ROUTES   |
++=============+ 
+'''
 
+app = Flask(__name__)
+CORS(app, origins=["http://localhost:5173"])
+@app.route('/')
+def home():
+    return 'Hello, Flask!'
 
+@app.route('/getFiling', methods=['POST'])
+def get_filing():
+    data = request.get_json()
+    print("Received from frontend:", data)
+    return jsonify({"message": "Filing received", "received": data})
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
 
