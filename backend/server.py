@@ -102,21 +102,9 @@ def printTable(element):
 |    SETUP    |
 +=============+ 
 '''
-# Initialize the downloader with your company name and email
-dl = Downloader("Felipo", "alitmallick@gmail.com")
 
-# Download the latest 10-Q filing for Apple
-html = dl.get_filing_html(ticker="AAPL", form="10-Q")
-
-print(html) 
-
-# Parse the HTML
-elements: list = sp.Edgar10QParser().parse(html)
-
-# render the filing
-demo_output: str = sp.render(elements)
-print_first_n_lines(demo_output, n=60)
-print(elements)
+# elements to be parsed 
+elements = {} 
 
 # elements for tables 
 table_elements =  {} 
@@ -125,39 +113,66 @@ table_elements =  {}
 render_elements = {} 
 
 
+'''
+try 'AAPL' and '10-Q' 
 
-print("Printing all elements..") 
-# get solely the table elements
-for i in range(len(elements)): 
-    element=elements[i]
-    print("lebronx ",i)
-    print(element)
-    print(type(element))
-    try: 
-        if (hasTableTag(element)):
-            table_elements[i] = element
-            render_elements[i] = element 
-        elif (isHeaderOrTitle(element)):
-            render_elements[i] = element 
-            print("is a header or title") 
-        print() 
-    except KeyError as e: 
-        print("skipping element ",i)
-        print() 
+TODO: may need to make it store it per user 
+'''
+def getElements(_ticker,_form):
+    # Initialize the downloader with your company name and email
+    dl = Downloader("Felipo", "alitmallick@gmail.com")
 
-print("Getting elemental structure") 
-print(vars(elements[0]))
-pprintTag(elements[0])  
-pprintTag(elements[1])  
+    # Download the latest 10-Q filing for Apple
+    html = dl.get_filing_html(ticker="AAPL", form="10-Q")
 
-print("\n\n\nPrinting a tag known to have tables")
+    # testing 
+    # print(html) 
+
+    # Parse the HTML
+    _elements: list = sp.Edgar10QParser().parse(html)
+    elements = _elements
+
+    # testing
+    print(elements) 
+
+# render the filing
+# demo_output: str = sp.render(elements)
+# print_first_n_lines(demo_output, n=60)
+# print(elements)
+
+
+# TODO: may need to store it per user 
+def categorizeElements(): 
+    for i in range(len(elements)): 
+        element=elements[i]
+        # print("lebronx ",i)
+        # print(element)
+        # print(type(element))
+        try: 
+            if (hasTableTag(element)):
+                table_elements[i] = element
+                render_elements[i] = element 
+            elif (isHeaderOrTitle(element)):
+                render_elements[i] = element 
+                # print("is a header or title") 
+            print() 
+        except KeyError as e: 
+            print("skipping element ",i)
+            print() 
+
+#print("Getting elemental structure") 
+#print(vars(elements[0]))
+#pprintTag(elements[0])  
+#pprintTag(elements[1])  
+
+#print("\n\n\nPrinting a tag known to have tables")
 # seeing if we can accurately detect whether the elemnt contains a table or an image 
-print(elements[0]._html_tag._contains_tag)
-print(elements[0]._html_tag._contains_tag[('img', True)])
-print(elements[0]._html_tag._contains_tag[('table',True)])
-print(hasTableTag(elements[0]))
+#print(elements[0]._html_tag._contains_tag)
+#print(elements[0]._html_tag._contains_tag[('img', True)])
+#print(elements[0]._html_tag._contains_tag[('table',True)])
+#print(hasTableTag(elements[0]))
 
-
+'''
 print("\n\n\nPrinting a tag known to have titles")
 print(vars(elements[51]))
 pprintTag(elements[51])  
@@ -166,76 +181,59 @@ print(elements[51]._html_tag._contains_tag[('img', True)])
 print(elements[51]._html_tag._contains_tag[('table',True)])
 print(hasTableTag(elements[51]))
 print(type(elements[51]))
+'''
 
+
+'''
 # printing out the tables that were created  
 print("Table Elements: ") 
 print(table_elements)
 print("Render Elements: ") 
 print(render_elements) 
+'''
+
 
 print("\n\nFiguring Out Tables") 
-pprintTag(elements[9])  
 
-# actually getting the tables out 
-table_tag1 = elements[9]._html_tag._bs4
-parsed_table = [] 
-rows = table_tag1.find_all("tr") 
-for row in rows: 
-    cells = row.find_all(["td", "th"])
-    text_cells = [cell.get_text(strip=True) for cell in cells if cell.get_text(strip=True)]
-    if text_cells:
-        print(text_cells)
-        parsed_table.append(row)
-    #print(row) 
 
+def parseTable(element):
+    table_tag = element._html_tag.bs4  
+    parsed_table = []
+    rows = table_tag.find_all("tr")
+    for row in rows:
+        cells = row.find_all(["td","th"])
+        text_cells = [cell.get_text(strip=True) for cell in cells if cell.get_text(strip=True)]
+        if text_cells:
+            print(text_cells)
+            parsed_table.append(row)
+
+
+'''
 print(table_elements)
 print("making pretty") 
+'''
 
-
-for key, element in table_elements.items():
-    print("Table #",key) 
-    printTable(element)
-    print() 
-
-for key, element in render_elements.items():
-    print("Element #",key) 
-    elementType = type(element) 
-    if (elementType == sp.semantic_elements.title_element.TitleElement or 
-        elementType == sp.semantic_elements.top_section_title.TopSectionTitle
-    ):
-        print(element.text) 
-    elif (elementType == sp.semantic_elements.table_element.table_element.TableElement):
-        printTable(element) 
-    else:
-        print("Not Handled") 
-    print() 
-
-
-# getting titles 
-# print("\n\nHeaderElement") 
-# pprintTag(elements[197])  
-# print(elements[197].text)
-
-# following segment was AI-generated 
-# TODO: rewrite methods so that they return strings
-with open("output.txt", "w", encoding="utf-8") as f:
-    with contextlib.redirect_stdout(f):
-        for key, element in table_elements.items():
-            print("Table #", key)
-            printTable(element)
-            print()
-
-        for key, element in render_elements.items():
-            print("Element #", key)
-            elementType = type(element) 
-            if (elementType == sp.semantic_elements.title_element.TitleElement or 
-                elementType == sp.semantic_elements.top_section_title.TopSectionTitle):
-                print(element.text)
-            elif (elementType == sp.semantic_elements.table_element.table_element.TableElement):
+def renderData():
+    # following segment was AI-generated 
+    # TODO: rewrite methods so that they return strings
+    with open("output.txt", "w", encoding="utf-8") as f:
+        with contextlib.redirect_stdout(f):
+            for key, element in table_elements.items():
+                print("Table #", key)
                 printTable(element)
-            else:
-                print("Not Handled")
-            print()
+                print()
+
+            for key, element in render_elements.items():
+                print("Element #", key)
+                elementType = type(element) 
+                if (elementType == sp.semantic_elements.title_element.TitleElement or 
+                    elementType == sp.semantic_elements.top_section_title.TopSectionTitle):
+                    print(element.text)
+                elif (elementType == sp.semantic_elements.table_element.table_element.TableElement):
+                    printTable(element)
+                else:
+                    print("Not Handled")
+                print()
 
 
 '''
@@ -254,6 +252,14 @@ def home():
 def get_filing():
     data = request.get_json()
     print("Received from frontend:", data)
+    data_ticker = data['ticker']
+    data_formtype = data['formType']
+    print("Validating ticker... ",data_ticker)
+    print("Validating form type... ",data_formtype) 
+    #def getElements(_ticker,_form):
+    getElements(data_ticker,data_formtype)
+    categorizeElements() 
+    renderData() 
     return jsonify({"message": "Filing received", "received": data})
 
 if __name__ == '__main__':
