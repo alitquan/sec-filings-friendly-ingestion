@@ -3,7 +3,7 @@ import sec_parser as sp
 from pprint import pprint
 from bs4 import BeautifulSoup
 import contextlib 
-from flask import Flask,request,jsonify
+from flask import Flask,request,jsonify,send_file
 from flask_cors import CORS 
 
 '''
@@ -119,6 +119,8 @@ try 'AAPL' and '10-Q'
 TODO: may need to make it store it per user 
 '''
 def getElements(_ticker,_form):
+    global elements
+
     # Initialize the downloader with your company name and email
     dl = Downloader("Felipo", "alitmallick@gmail.com")
 
@@ -145,9 +147,9 @@ def getElements(_ticker,_form):
 def categorizeElements(): 
     for i in range(len(elements)): 
         element=elements[i]
-        # print("lebronx ",i)
-        # print(element)
-        # print(type(element))
+        print("lebronx ",i)
+        print(element)
+        print(type(element))
         try: 
             if (hasTableTag(element)):
                 table_elements[i] = element
@@ -159,6 +161,8 @@ def categorizeElements():
         except KeyError as e: 
             print("skipping element ",i)
             print() 
+    print(table_elements) 
+    print(render_elements) 
 
 #print("Getting elemental structure") 
 #print(vars(elements[0]))
@@ -212,11 +216,11 @@ def parseTable(element):
 print(table_elements)
 print("making pretty") 
 '''
-
+""" 
 def renderData():
     # following segment was AI-generated 
     # TODO: rewrite methods so that they return strings
-    with open("output.txt", "w", encoding="utf-8") as f:
+    with open("output.txt", "w", encoding="utf-7") as f:
         with contextlib.redirect_stdout(f):
             for key, element in table_elements.items():
                 print("Table #", key)
@@ -235,6 +239,53 @@ def renderData():
                     print("Not Handled")
                 print()
 
+ """
+import io
+import contextlib
+
+def render_data_same_page():
+    print("renderData() working")
+    print(render_elements)
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        for key, element in table_elements.items():
+            print("Table #", key)
+            printTable(element)
+            print()
+
+        for key, element in render_elements.items():
+            print("Element #", key)
+            elementType = type(element) 
+            if (elementType == sp.semantic_elements.title_element.TitleElement or 
+                elementType == sp.semantic_elements.top_section_title.TopSectionTitle):
+                print(element.text)
+            elif (elementType == sp.semantic_elements.table_element.table_element.TableElement):
+                printTable(element)
+            else:
+                print("Not Handled")
+            print()
+    
+    return buffer.getvalue()
+
+def render_data_file(path): 
+    with open(path, "w", encoding="utf-8") as f:
+        with contextlib.redirect_stdout(f):
+            for key, element in table_elements.items():
+                print("Table #", key)
+                printTable(element)
+                print()
+
+            for key, element in render_elements.items():
+                print("Element #", key)
+                elementType = type(element) 
+                if (elementType == sp.semantic_elements.title_element.TitleElement or 
+                    elementType == sp.semantic_elements.top_section_title.TopSectionTitle):
+                    print(element.text)
+                elif (elementType == sp.semantic_elements.table_element.table_element.TableElement):
+                    printTable(element)
+                else:
+                    print("Not Handled")
+                print()
 
 '''
 +=============+
@@ -254,13 +305,21 @@ def get_filing():
     print("Received from frontend:", data)
     data_ticker = data['ticker']
     data_formtype = data['formType']
+    download = data['download']
     print("Validating ticker... ",data_ticker)
     print("Validating form type... ",data_formtype) 
     #def getElements(_ticker,_form):
     getElements(data_ticker,data_formtype)
     categorizeElements() 
-    renderData() 
-    return jsonify({"message": "Filing received", "received": data})
+    if download: 
+        filepath = "output/aladdin.txt"
+        render_data_file(filepath) 
+        return send_file(filepath,as_attachment=True)
+    else :
+        return jsonify({"message": "Filing received", 
+                        "received": data,
+                        })
+    return send_file (filepath,as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

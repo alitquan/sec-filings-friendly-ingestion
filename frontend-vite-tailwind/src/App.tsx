@@ -1,11 +1,12 @@
 import React, {useState} from "react";
-import config from './config';
+import config from "./config.tsx";
 
 function App() { 
     const [url, setUrl] = useState('');
     const [ticker,setTicker] = useState('');
     const [formType,setFormType] = useState('');
     const [filedStatus, setFiledStatus] = useState(''); 
+    const [fileData, setFileData] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -14,6 +15,7 @@ function App() {
 
         const endpoint = config.API_URL+"getFiling";
         console.log(endpoint)
+        const wantsDownload = true 
         try {
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -23,16 +25,26 @@ function App() {
                 body: JSON.stringify({
                     ticker: ticker,
                     formType: formType,
+                    download: wantsDownload,
                 }),
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log("Response from backend: ", data);
-                setFiledStatus("Success: Filing data submitted!");
+            if (!response.ok) {
+                setFiledStatus("Error retrieving filing") 
+            }
+            if (wantsDownload) {
+                console.log("Download struck")
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = ticker.toUpperCase() + "---" + formType + ".txt";
+                link.click();
+                window.URL.revokeObjectURL(url);
+                setFiledStatus("Success: File downloaded!");
             } else {
-                console.error("Error submitting data: ", response.status);
-                setFiledStatus("Error: Failed to submit data.");
+                const data = await response.json();
+                setFiledStatus("Success: Filing received!");
+                setFileData(data.fileContents);
             }
         } catch (error) {
             console.error("Error:", error);
