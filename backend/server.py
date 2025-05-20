@@ -5,6 +5,10 @@ from bs4 import BeautifulSoup
 import contextlib 
 from flask import Flask,request,jsonify,send_file
 from flask_cors import CORS 
+import os
+import io
+import contextlib
+
 
 '''
 +=========+
@@ -240,8 +244,6 @@ def renderData():
                 print()
 
  """
-import io
-import contextlib
 
 def render_data_same_page():
     print("renderData() working")
@@ -268,6 +270,17 @@ def render_data_same_page():
     return buffer.getvalue()
 
 def render_data_file(path): 
+    # creating the path1
+    dir_path = os.path.dirname(path)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    if not os.path.exists(path):
+        with open(path, 'w') as f:
+            f.write("Hello, world!")
+    else:
+        print("File already exists!")
+    
+    # writing to a temp file being shipped to a user
     with open(path, "w", encoding="utf-8") as f:
         with contextlib.redirect_stdout(f):
             for key, element in table_elements.items():
