@@ -23,6 +23,12 @@ pip install -r requirements.txt
 [] normalize dates 
 
 
+[] define ports for python and react
+[] add test pages for each server application 
+[] allows processes and ports through firewall 
+[] unicorn server for multiuse
+[] close processes using those ports in script
+[] add script to git
 
 
 
