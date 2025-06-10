@@ -26,3 +26,7 @@ dist-ssr
 # virt
 env
 backend/output*
+backend/pdf-filings/*
+
+#config
+.env
