@@ -6,6 +6,7 @@ function App() {
     const [ticker,setTicker] = useState('');
     const [filedStatus, setFiledStatus] = useState(''); 
     const [fileData, setFileData] = useState('');
+    const [outputFile, setOutputFile] = useState('')
 
 
     const handlePDFconversion = async(e) => {
@@ -19,20 +20,23 @@ function App() {
                     "Content-Type":"application/json",
                 },
                 body: JSON.stringify({
-                    url : url 
+                    url : url,
+                    outputFile: outputFile,
                 }),
             }))
             if (!response.ok) {
                 setFiledStatus("Error retrieving filing") 
                 return;
             }
-            else {
-                setFiledStatus("Submitting...");
-                const data = await response.json();
-                console.log("/geeratePDF-filing worked!")
-                console.log(data)
-                return "OK" 
-            }
+            setFiledStatus("Submitting...");
+            const data = await response.json();
+            // open in new tab
+            const pdfUrl = `${config.API_URL}download-pdf/${encodeURIComponent(data.filename)}`;
+            window.open(pdfUrl, "_blank");
+
+            console.log("/generatePDF-filing worked!");
+            return "OK";
+            
         }
         catch (error) {
             console.error("PDF conversion failed:", error);
@@ -101,6 +105,18 @@ function App() {
                         /> 
 
                     </div> 
+
+                      <div className="bg-white p-8 w-full max-w-md flex flex-col space-y-2 justify-center">
+                        <input 
+                            type="text" 
+                            placeholder="Enter Output Filename Here"
+                            className="p-3 border rounded-md"
+                            value={outputFile} 
+                            onChange={(e)=> setOutputFile(e.target.value)}
+                            required
+                        /> 
+                    </div> 
+                    
                     <button
                         type="submit"
                         className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition" 
