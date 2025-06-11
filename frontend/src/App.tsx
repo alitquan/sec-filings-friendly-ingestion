@@ -11,7 +11,7 @@ function App() {
 
     const handlePDFconversion = async(e) => {
         e.preventDefault(); 
-        setFiledStatus(url);
+        setFiledStatus("Attempting to convert "+url+" to PDF...");
         const endpoint = config.API_URL+"generatePDF-filing";
         try{ 
             const response = await (fetch (endpoint, {
@@ -35,6 +35,7 @@ function App() {
             window.open(pdfUrl, "_blank");
 
             console.log("/generatePDF-filing worked!");
+            setFiledStatus("Download Successful ! ")
             return "OK";
             
         }
@@ -127,7 +128,7 @@ function App() {
                 { filedStatus && 
                 (
                     <div className="mt-4 text-center text-sm text-gray-700" >
-                        <p> URL: <strong> {url}</strong> </p> 
+                        {filedStatus} 
                     </div> 
                 )
                 }

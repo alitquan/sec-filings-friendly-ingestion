@@ -75,7 +75,7 @@ def generate_pdf():
 @app.route('/download-pdf/<path:filename>') 
 def view_pdf(filename):
     return send_from_directory( 
-        GENERATION_DIRECTORY,filename,as_attachment=False
+        GENERATION_DIRECTORY,filename,as_attachment=True
     )
 
 if __name__ == '__main__':
